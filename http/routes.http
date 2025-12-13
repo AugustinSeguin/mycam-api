@@ -1,0 +1,101 @@
+### Variables
+@baseUrl = http://10.254.176.58:3000
+@apiKey = MyCamAPI_7x9K2mP4nQ8vW5yZ3bC6hJ1lR0tS
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhdWd1c3RpbkB0ZXN0LmNvbSIsImlhdCI6MTc2NTYyNDI1NCwiZXhwIjoxNzY1NzEwNjU0fQ.QCBAJ47cPqo94pqtqzppGq57wghsYa4_1oo_ZbnXsJI
+@camKey = cam_esp32_001
+
+### Health Check
+GET {{baseUrl}}/health
+
+###############################################
+# AUTH ROUTES
+###############################################
+
+### Register - Créer un nouvel utilisateur
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "nom": "Seguin",
+  "prenom": "Augustin",
+  "email": "augustin@test.com",
+  "password": "Password123"
+}
+
+### Login - Authentification
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "augustin@test.com",
+  "password": "Password123"
+}
+
+###############################################
+# CAMERA ROUTES
+###############################################
+
+### Créer une nouvelle caméra (nécessite JWT + API Key)
+POST {{baseUrl}}/cameras/create
+Content-Type: application/json
+Authorization: Bearer {{token}}
+X-API-Key: {{apiKey}}
+
+{
+  "nom": "Caméra Salon",
+  "cam_key": "{{camKey}}"
+}
+
+### Récupérer mes caméras (nécessite JWT)
+GET {{baseUrl}}/cameras/my-cameras
+Authorization: Bearer {{token}}
+X-API-Key: {{apiKey}}
+
+### Flux vidéo en temps réel (nécessite API Key)
+GET {{baseUrl}}/cameras/video/{{camKey}}
+X-API-Key: {{apiKey}}
+
+### Envoyer une notification (nécessite API Key) - Simule l'ESP32
+POST {{baseUrl}}/cameras/notification/{{camKey}}
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "type": "motion",
+  "message": "Movement detected by ESP32-CAM",
+  "timestamp": 1702469789
+}
+
+### Test notification sans timestamp
+POST {{baseUrl}}/cameras/notification/{{camKey}}
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "type": "motion",
+  "message": "Movement detected - test sans timestamp"
+}
+
+###############################################
+# ERROR TESTS
+###############################################
+
+### Test sans API Key (devrait échouer)
+GET {{baseUrl}}/cameras/video/{{camKey}}
+
+### Test avec mauvaise API Key
+GET {{baseUrl}}/cameras/video/{{camKey}}
+X-API-Key: WRONG_KEY
+
+### Test caméra inexistante
+GET {{baseUrl}}/cameras/video/cam_inexistante
+X-API-Key: {{apiKey}}
+
+### Test notification sans type/message
+POST {{baseUrl}}/cameras/notification/{{camKey}}
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "type": "motion"
+}

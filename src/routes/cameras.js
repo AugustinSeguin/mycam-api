@@ -168,4 +168,64 @@ router.get("/my-cameras", authenticateToken, async (req, res) => {
   }
 });
 
+// Supprimer une caméra de l'utilisateur
+router.delete(
+  "/:id",
+  authenticateToken,
+  authenticateApiKey,
+  async (req, res) => {
+    try {
+      const cameraId = parseInt(req.params.id);
+      const userId = req.user.id;
+
+      if (isNaN(cameraId)) {
+        return res.status(400).json({ error: "ID de caméra invalide." });
+      }
+
+      // Vérifier que la caméra existe et appartient à l'utilisateur
+      const userCamera = await pool.query(
+        `SELECT c.id, c.nom, c.cam_key FROM cameras c
+         JOIN user_cameras uc ON c.id = uc.camera_id
+         WHERE c.id = $1 AND uc.user_id = $2`,
+        [cameraId, userId]
+      );
+
+      if (userCamera.rows.length === 0) {
+        return res.status(404).json({
+          error:
+            "Caméra non trouvée ou vous n'avez pas les droits pour la supprimer.",
+        });
+      }
+
+      // Supprimer la relation user_cameras
+      await pool.query(
+        "DELETE FROM user_cameras WHERE camera_id = $1 AND user_id = $2",
+        [cameraId, userId]
+      );
+
+      // Vérifier s'il reste d'autres utilisateurs associés à cette caméra
+      const remainingUsers = await pool.query(
+        "SELECT * FROM user_cameras WHERE camera_id = $1",
+        [cameraId]
+      );
+
+      // Si plus aucun utilisateur n'est associé, supprimer la caméra et ses notifications
+      if (remainingUsers.rows.length === 0) {
+        await pool.query("DELETE FROM notifications WHERE camera_id = $1", [
+          cameraId,
+        ]);
+        await pool.query("DELETE FROM cameras WHERE id = $1", [cameraId]);
+      }
+
+      res.json({
+        message: "Caméra supprimée avec succès",
+        camera: userCamera.rows[0],
+      });
+    } catch (error) {
+      console.error("Erreur lors de la suppression de la caméra:", error);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
+  }
+);
+
 module.exports = router;

@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const http = require("http");
+const cors = require("cors");
 const pool = require("./config/database");
 const { initSocket } = require("./config/socket");
 const authRoutes = require("./routes/auth");
@@ -17,6 +18,21 @@ const server = http.createServer(app);
 
 // Initialiser Socket.IO
 initSocket(server);
+
+// Middleware CORS
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-API-Key",
+      "X-Camera-API-Key",
+    ],
+  })
+);
 
 // Middleware
 app.use(express.json());

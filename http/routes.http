@@ -1,8 +1,9 @@
 ### Variables
 @baseUrl = http://0.0.0.0:3000
 @apiKey = MyCamAPI_7x9K2mP4nQ8vW5yZ3bC6hJ1lR0tS
+@cameraApiKey = CamRegister_8k2L5pN9qR4wX7zA1bD3eF6gH0iJ
 @token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhdWd1c3RpbkB0ZXN0LmNvbSIsImlhdCI6MTc2NzA4NzE0NCwiZXhwIjoxNzY3MTczNTQ0fQ.o_gllX5wI3N1BS-yp0782rAZexWZepJLJtJJJjjXaSo
-@camKey = cam_esp32_001
+@camKey = cam_esp32_002
 
 ### Health Check
 GET {{baseUrl}}/health
@@ -14,6 +15,8 @@ GET {{baseUrl}}/health
 ### Register - Créer un nouvel utilisateur
 POST {{baseUrl}}/auth/register
 Content-Type: application/json
+X-API-Key: {{apiKey}}
+X-Camera-API-Key: {{cameraApiKey}}
 
 {
   "nom": "Seguin",
@@ -25,6 +28,7 @@ Content-Type: application/json
 ### Login - Authentification
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
+X-API-Key: {{apiKey}}
 
 {
   "email": "augustin@test.com",
@@ -48,6 +52,11 @@ X-API-Key: {{apiKey}}
 
 ### Récupérer mes caméras (nécessite JWT)
 GET {{baseUrl}}/cameras/my-cameras
+Authorization: Bearer {{token}}
+X-API-Key: {{apiKey}}
+
+### Supprimer une caméra (nécessite JWT + API Key)
+DELETE {{baseUrl}}/cameras/1
 Authorization: Bearer {{token}}
 X-API-Key: {{apiKey}}
 

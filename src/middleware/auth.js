@@ -29,7 +29,19 @@ const authenticateApiKey = (req, res, next) => {
   next();
 };
 
+// Middleware pour vérifier la Camera API Key (pour l'enregistrement)
+const authenticateCameraApiKey = (req, res, next) => {
+  const cameraApiKey = req.headers["x-camera-api-key"];
+
+  if (!cameraApiKey || cameraApiKey !== process.env.CAMERA_API_KEY) {
+    return res.status(401).json({ error: "Camera API Key invalide." });
+  }
+
+  next();
+};
+
 module.exports = {
   authenticateToken,
   authenticateApiKey,
+  authenticateCameraApiKey,
 };

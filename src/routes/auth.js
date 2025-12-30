@@ -3,6 +3,10 @@ const router = express.Router();
 const pool = require("../config/database");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const {
+  authenticateApiKey,
+  authenticateCameraApiKey,
+} = require("../middleware/auth");
 
 // Fonction pour valider la force du mot de passe
 const validatePassword = (password) => {
@@ -15,52 +19,57 @@ const validatePassword = (password) => {
 };
 
 // Register - Créer un nouvel utilisateur
-router.post("/register", async (req, res) => {
-  try {
-    const { nom, prenom, email, password } = req.body;
+router.post(
+  "/register",
+  authenticateApiKey,
+  authenticateCameraApiKey,
+  async (req, res) => {
+    try {
+      const { nom, prenom, email, password } = req.body;
 
-    if (!nom || !prenom || !email || !password) {
-      return res.status(400).json({ error: "Tous les champs sont requis." });
-    }
+      if (!nom || !prenom || !email || !password) {
+        return res.status(400).json({ error: "Tous les champs sont requis." });
+      }
 
-    if (!validatePassword(password)) {
-      return res.status(400).json({
-        error:
-          "Le mot de passe doit contenir au minimum 8 caractères avec chiffres, lettres minuscules et majuscules.",
+      if (!validatePassword(password)) {
+        return res.status(400).json({
+          error:
+            "Le mot de passe doit contenir au minimum 8 caractères avec chiffres, lettres minuscules et majuscules.",
+        });
+      }
+
+      // Vérifier si l'email existe déjà
+      const emailExists = await pool.query(
+        "SELECT * FROM users WHERE email = $1",
+        [email]
+      );
+
+      if (emailExists.rows.length > 0) {
+        return res.status(400).json({ error: "Cet email est déjà utilisé." });
+      }
+
+      // Hash du mot de passe
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Créer l'utilisateur
+      const result = await pool.query(
+        "INSERT INTO users (nom, prenom, email, password) VALUES ($1, $2, $3, $4) RETURNING id, nom, prenom, email",
+        [nom, prenom, email, hashedPassword]
+      );
+
+      res.status(201).json({
+        message: "Utilisateur créé avec succès",
+        user: result.rows[0],
       });
+    } catch (error) {
+      console.error("Erreur lors de la création de l'utilisateur:", error);
+      res.status(500).json({ error: "Erreur serveur" });
     }
-
-    // Vérifier si l'email existe déjà
-    const emailExists = await pool.query(
-      "SELECT * FROM users WHERE email = $1",
-      [email]
-    );
-
-    if (emailExists.rows.length > 0) {
-      return res.status(400).json({ error: "Cet email est déjà utilisé." });
-    }
-
-    // Hash du mot de passe
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Créer l'utilisateur
-    const result = await pool.query(
-      "INSERT INTO users (nom, prenom, email, password) VALUES ($1, $2, $3, $4) RETURNING id, nom, prenom, email",
-      [nom, prenom, email, hashedPassword]
-    );
-
-    res.status(201).json({
-      message: "Utilisateur créé avec succès",
-      user: result.rows[0],
-    });
-  } catch (error) {
-    console.error("Erreur lors de la création de l'utilisateur:", error);
-    res.status(500).json({ error: "Erreur serveur" });
   }
-});
+);
 
 // Login - Authentifier un utilisateur
-router.post("/login", async (req, res) => {
+router.post("/login", authenticateApiKey, async (req, res) => {
   try {
     const { email, password } = req.body;
 

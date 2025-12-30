@@ -60,6 +60,7 @@ DB_PASSWORD=your_password
 # Sécurité
 JWT_SECRET=your_super_secret_jwt_key
 API_KEY=MyCamAPI_your_api_key_here
+CAMERA_API_KEY=CamRegister_your_camera_api_key_here
 ```
 
 4. **Initialiser la base de données**
@@ -82,20 +83,26 @@ npm run dev
 
 ### 🔓 Routes publiques
 
-| Méthode | Endpoint         | Description                 |
-| ------- | ---------------- | --------------------------- |
-| `GET`   | `/health`        | Vérifier le statut de l'API |
-| `POST`  | `/auth/register` | Créer un nouvel utilisateur |
-| `POST`  | `/auth/login`    | Authentifier un utilisateur |
+| Méthode | Endpoint  | Description                 |
+| ------- | --------- | --------------------------- |
+| `GET`   | `/health` | Vérifier le statut de l'API |
+
+### 🔒 Routes d'authentification (API Key requise)
+
+| Méthode | Endpoint         | Description                 | Auth                     |
+| ------- | ---------------- | --------------------------- | ------------------------ |
+| `POST`  | `/auth/register` | Créer un nouvel utilisateur | API Key + Camera API Key |
+| `POST`  | `/auth/login`    | Authentifier un utilisateur | API Key                  |
 
 ### 🔒 Routes protégées (API Key requise)
 
-| Méthode | Endpoint                         | Description               | Auth          |
-| ------- | -------------------------------- | ------------------------- | ------------- |
-| `POST`  | `/cameras/create`                | Créer une nouvelle caméra | JWT + API Key |
-| `GET`   | `/cameras/my-cameras`            | Récupérer ses caméras     | JWT + API Key |
-| `GET`   | `/cameras/video/:cam_key`        | Flux vidéo en temps réel  | API Key       |
-| `POST`  | `/cameras/notification/:cam_key` | Envoyer une notification  | API Key       |
+| Méthode  | Endpoint                         | Description               | Auth          |
+| -------- | -------------------------------- | ------------------------- | ------------- |
+| `POST`   | `/cameras/create`                | Créer une nouvelle caméra | JWT + API Key |
+| `GET`    | `/cameras/my-cameras`            | Récupérer ses caméras     | JWT + API Key |
+| `DELETE` | `/cameras/:id`                   | Supprimer une caméra      | JWT + API Key |
+| `GET`    | `/cameras/video/:cam_key`        | Flux vidéo en temps réel  | API Key       |
+| `POST`   | `/cameras/notification/:cam_key` | Envoyer une notification  | API Key       |
 
 ## 📝 Exemples d'utilisation
 
@@ -104,6 +111,8 @@ npm run dev
 ```http
 POST /auth/register
 Content-Type: application/json
+X-API-Key: <api_key>
+X-Camera-API-Key: <camera_api_key>
 
 {
   "nom": "Dupont",
@@ -114,12 +123,14 @@ Content-Type: application/json
 ```
 
 > ⚠️ Le mot de passe doit contenir minimum 8 caractères avec chiffres, minuscules et majuscules.
+> 🔑 Cette route nécessite les headers `X-API-Key` et `X-Camera-API-Key`.
 
 ### Connexion
 
 ```http
 POST /auth/login
 Content-Type: application/json
+X-API-Key: <api_key>
 
 {
   "email": "jean@example.com",

@@ -1,17 +1,23 @@
-const { Server } = require("socket.io");
-const jwt = require("jsonwebtoken");
-const pool = require("./database");
+import { Server, Socket } from "socket.io";
+import jwt from "jsonwebtoken";
+import http from "http";
+import pool from "./database";
+import { UserPayload, NotificationPayload } from "../types";
 
-let io = null;
+let io: Server | null = null;
 
 // Map pour stocker les connexions utilisateur -> socket
-const userSockets = new Map();
+const userSockets = new Map<number, Set<string>>();
+
+interface AuthenticatedSocket extends Socket {
+  userId?: number;
+  userEmail?: string;
+}
 
 /**
  * Initialise Socket.IO avec le serveur HTTP
- * @param {http.Server} server - Serveur HTTP
  */
-const initSocket = (server) => {
+export const initSocket = (server: http.Server): Server => {
   io = new Server(server, {
     cors: {
       origin: "*",
@@ -20,35 +26,40 @@ const initSocket = (server) => {
   });
 
   // Middleware d'authentification Socket.IO
-  io.use(async (socket, next) => {
+  io.use(async (socket: AuthenticatedSocket, next) => {
     try {
-      const token = socket.handshake.auth.token;
+      const token = socket.handshake.auth.token as string;
 
       if (!token) {
         return next(new Error("Token manquant"));
       }
 
       // Vérifier le JWT
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(
+        token,
+        process.env.JWT_SECRET as string
+      ) as UserPayload;
       socket.userId = decoded.id;
       socket.userEmail = decoded.email;
 
       next();
-    } catch (error) {
+    } catch {
       next(new Error("Token invalide"));
     }
   });
 
-  io.on("connection", async (socket) => {
+  io.on("connection", async (socket: AuthenticatedSocket) => {
     console.log(
       `[Socket.IO] Utilisateur connecté: ${socket.userEmail} (ID: ${socket.userId})`
     );
 
     // Stocker la connexion
-    if (!userSockets.has(socket.userId)) {
-      userSockets.set(socket.userId, new Set());
+    if (socket.userId) {
+      if (!userSockets.has(socket.userId)) {
+        userSockets.set(socket.userId, new Set());
+      }
+      userSockets.get(socket.userId)!.add(socket.id);
     }
-    userSockets.get(socket.userId).add(socket.id);
 
     // Récupérer les caméras de l'utilisateur et rejoindre les rooms
     try {
@@ -60,7 +71,7 @@ const initSocket = (server) => {
       );
 
       // Rejoindre une room pour chaque caméra
-      result.rows.forEach((cam) => {
+      result.rows.forEach((cam: { cam_key: string }) => {
         socket.join(`camera:${cam.cam_key}`);
         console.log(
           `[Socket.IO] ${socket.userEmail} a rejoint la room camera:${cam.cam_key}`
@@ -74,7 +85,7 @@ const initSocket = (server) => {
     }
 
     // Permettre à l'utilisateur de s'abonner manuellement à une caméra
-    socket.on("subscribe:camera", (camKey) => {
+    socket.on("subscribe:camera", (camKey: string) => {
       socket.join(`camera:${camKey}`);
       console.log(
         `[Socket.IO] ${socket.userEmail} s'est abonné à camera:${camKey}`
@@ -82,7 +93,7 @@ const initSocket = (server) => {
     });
 
     // Permettre de se désabonner
-    socket.on("unsubscribe:camera", (camKey) => {
+    socket.on("unsubscribe:camera", (camKey: string) => {
       socket.leave(`camera:${camKey}`);
       console.log(
         `[Socket.IO] ${socket.userEmail} s'est désabonné de camera:${camKey}`
@@ -93,9 +104,9 @@ const initSocket = (server) => {
       console.log(`[Socket.IO] Utilisateur déconnecté: ${socket.userEmail}`);
 
       // Supprimer la connexion
-      if (userSockets.has(socket.userId)) {
-        userSockets.get(socket.userId).delete(socket.id);
-        if (userSockets.get(socket.userId).size === 0) {
+      if (socket.userId && userSockets.has(socket.userId)) {
+        userSockets.get(socket.userId)!.delete(socket.id);
+        if (userSockets.get(socket.userId)!.size === 0) {
           userSockets.delete(socket.userId);
         }
       }
@@ -108,10 +119,11 @@ const initSocket = (server) => {
 
 /**
  * Émet une notification à tous les utilisateurs abonnés à une caméra
- * @param {string} camKey - Clé de la caméra
- * @param {object} notification - Données de la notification
  */
-const emitNotification = (camKey, notification) => {
+export const emitNotification = (
+  camKey: string,
+  notification: Omit<NotificationPayload, "camKey" | "receivedAt">
+): void => {
   if (!io) {
     console.error("[Socket.IO] Socket.IO non initialisé");
     return;
@@ -129,10 +141,4 @@ const emitNotification = (camKey, notification) => {
 /**
  * Retourne l'instance Socket.IO
  */
-const getIO = () => io;
-
-module.exports = {
-  initSocket,
-  emitNotification,
-  getIO,
-};
+export const getIO = (): Server | null => io;

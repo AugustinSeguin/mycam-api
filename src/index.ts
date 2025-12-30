@@ -1,12 +1,11 @@
-require("dotenv").config();
-const express = require("express");
-const http = require("http");
-const cors = require("cors");
-const pool = require("./config/database");
-const { initSocket } = require("./config/socket");
-const authRoutes = require("./routes/auth");
-const cameraRoutes = require("./routes/cameras");
-const { authenticateApiKey } = require("./middleware/auth");
+import "dotenv/config";
+import express, { Request, Response } from "express";
+import http from "node:http";
+import cors from "cors";
+import { initSocket } from "./config/socket.js";
+import authRoutes from "./routes/auth.js";
+import cameraRoutes from "./routes/cameras.js";
+import { authenticateApiKey } from "./middleware/auth.js";
 
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || "0.0.0.0";
@@ -44,19 +43,19 @@ app.use("/auth", authRoutes);
 app.use("/cameras", authenticateApiKey, cameraRoutes);
 
 // Route de santé
-app.get("/health", (req, res) => {
+app.get("/health", (_req: Request, res: Response) => {
   res.json({ status: "API actif", websocket: "enabled" });
 });
 
 // Gestion des erreurs 404
-app.use((req, res) => {
+app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: "Route non trouvée" });
 });
 
 // Démarrage du serveur HTTP (Express + Socket.IO)
-server.listen(PORT, HOST, () => {
+server.listen(Number(PORT), HOST, () => {
   console.log(`Server running on http://${HOST}:${PORT}`);
   console.log(`WebSocket ready on ws://${HOST}:${PORT}`);
 });
 
-module.exports = { app, server };
+export { app, server };

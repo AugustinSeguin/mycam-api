@@ -115,8 +115,8 @@ X-API-Key: <api_key>
 X-Camera-API-Key: <camera_api_key>
 
 {
-  "nom": "Dupont",
-  "prenom": "Jean",
+  "lastname": "Dupont",
+  "firstname": "Jean",
   "email": "jean@example.com",
   "password": "Password123"
 }
@@ -146,8 +146,8 @@ X-API-Key: <api_key>
   "token": "eyJhbGciOiJIUzI1NiIs...",
   "user": {
     "id": 1,
-    "nom": "Dupont",
-    "prenom": "Jean",
+    "lastname": "Dupont",
+    "firstname": "Jean",
     "email": "jean@example.com"
   }
 }
@@ -162,7 +162,7 @@ Authorization: Bearer <token>
 X-API-Key: <api_key>
 
 {
-  "nom": "Caméra Salon",
+  "lastname": "Caméra Salon",
   "cam_key": "cam_esp32_001"
 }
 ```
@@ -247,10 +247,10 @@ socket.emit("unsubscribe:camera", "cam_esp32_002");
 
 ```sql
 -- Table des utilisateurs
-users (id, nom, prenom, email, password, api_key, created_at)
+users (id, lastname, firstname, email, password, api_key, created_at)
 
 -- Table des caméras
-cameras (id, nom, cam_key, created_by, created_at)
+cameras (id, lastname, cam_key, created_by, created_at)
 
 -- Table de relation utilisateur-caméra (many-to-many)
 user_cameras (user_id, camera_id)

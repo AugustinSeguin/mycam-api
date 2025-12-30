@@ -2,11 +2,12 @@
     "name": "mycam-api",
     "version": "1.0.0",
     "description": "API caméra surveillance en temps réel + notif",
-    "main": "src/index.js",
+    "main": "dist/index.js",
     "scripts": {
-        "start": "node src/index.js",
-        "dev": "nodemon src/index.js",
-        "db:init": "node src/scripts/initDb.js"
+        "start": "node dist/index.js",
+        "dev": "tsx watch src/index.ts",
+        "build": "tsc",
+        "db:init": "tsx src/scripts/initDb.ts"
     },
     "keywords": [
         "camera",
@@ -26,6 +27,15 @@
         "socket.io": "^4.8.3"
     },
     "devDependencies": {
-        "nodemon": "^3.0.2"
+        "@types/bcryptjs": "^2.4.6",
+        "@types/cors": "^2.8.19",
+        "@types/express": "^5.0.6",
+        "@types/jsonwebtoken": "^9.0.10",
+        "@types/node": "^25.0.3",
+        "@types/pg": "^8.16.0",
+        "nodemon": "^3.0.2",
+        "ts-node": "^10.9.2",
+        "tsx": "^4.21.0",
+        "typescript": "^5.9.3"
     }
 }

@@ -1,7 +1,7 @@
-require("dotenv").config();
-const pool = require("../config/database");
+import "dotenv/config";
+import pool from "../config/database";
 
-const initDb = async () => {
+const initDb = async (): Promise<void> => {
   const client = await pool.connect();
   try {
     console.log("Initialisation de la base de données...");
@@ -10,11 +10,10 @@ const initDb = async () => {
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
-        nom VARCHAR(100) NOT NULL,
-        prenom VARCHAR(100) NOT NULL,
+        lastname VARCHAR(100) NOT NULL,
+        firstname VARCHAR(100) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
-        api_key VARCHAR(255) UNIQUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -24,7 +23,7 @@ const initDb = async () => {
     await client.query(`
       CREATE TABLE IF NOT EXISTS cameras (
         id SERIAL PRIMARY KEY,
-        nom VARCHAR(255) NOT NULL,
+        name VARCHAR(255) NOT NULL,
         cam_key VARCHAR(255) UNIQUE NOT NULL,
         created_by INTEGER REFERENCES users(id),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

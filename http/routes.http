@@ -19,8 +19,8 @@ X-API-Key: {{apiKey}}
 X-Camera-API-Key: {{cameraApiKey}}
 
 {
-  "nom": "Seguin",
-  "prenom": "Augustin",
+  "lastname": "Seguin",
+  "firstname": "Augustin",
   "email": "augustin@test.com",
   "password": "Password123"
 }
@@ -46,7 +46,7 @@ Authorization: Bearer {{token}}
 X-API-Key: {{apiKey}}
 
 {
-  "nom": "Caméra Salon",
+  "name": "Caméra Salon",
   "cam_key": "{{camKey}}"
 }
 

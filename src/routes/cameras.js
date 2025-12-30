@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const pool = require("../config/database");
+const { emitNotification } = require("../config/socket");
 const { authenticateToken, authenticateApiKey } = require("../middleware/auth");
 
 // Créer une nouvelle caméra
@@ -127,8 +128,17 @@ router.post("/notification/:cam_key", async (req, res) => {
       [camera.rows[0].id, type, message, createdAt]
     );
 
+    // Émettre la notification en temps réel via Socket.IO
+    emitNotification(cam_key, {
+      id: result.rows[0].id,
+      type: result.rows[0].type,
+      message: result.rows[0].message,
+      cameraName: camera.rows[0].nom,
+      createdAt: result.rows[0].created_at,
+    });
+
     res.status(201).json({
-      message: "Notification enregistrée",
+      message: "Notification enregistrée et envoyée en temps réel",
       notification: result.rows[0],
     });
   } catch (error) {

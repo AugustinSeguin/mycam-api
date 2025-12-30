@@ -13,6 +13,7 @@ API REST pour la gestion de caméras de surveillance ESP32-CAM en temps réel av
 ## 🛠️ Technologies
 
 - **Node.js** + **Express** - Framework backend
+- **Socket.IO** - Notifications en temps réel via WebSocket
 - **PostgreSQL** - Base de données relationnelle
 - **JWT** (jsonwebtoken) - Authentification par token
 - **bcryptjs** - Hashage des mots de passe
@@ -171,7 +172,67 @@ X-API-Key: <api_key>
 
 > 💡 Si la caméra n'existe pas, elle sera créée automatiquement.
 
-## 🗄️ Structure de la base de données
+## � Notifications en temps réel (WebSocket)
+
+L'API utilise **Socket.IO** pour envoyer des notifications en temps réel aux utilisateurs connectés.
+
+### Connexion au WebSocket
+
+```javascript
+import { io } from "socket.io-client";
+
+const socket = io("http://localhost:3000", {
+  auth: {
+    token: "votre_jwt_token", // Token obtenu via /auth/login
+  },
+});
+
+// Connexion réussie
+socket.on("connect", () => {
+  console.log("Connecté au serveur WebSocket");
+});
+
+// Recevoir les notifications
+socket.on("notification", (data) => {
+  console.log("Nouvelle notification:", data);
+  // {
+  //   camKey: "cam_esp32_001",
+  //   id: 1,
+  //   type: "motion",
+  //   message: "Mouvement détecté",
+  //   cameraName: "Caméra Salon",
+  //   createdAt: "2024-12-13T10:30:00.000Z",
+  //   receivedAt: "2024-12-13T10:30:00.123Z"
+  // }
+});
+
+// Erreur de connexion
+socket.on("connect_error", (error) => {
+  console.error("Erreur de connexion:", error.message);
+});
+```
+
+### Événements disponibles
+
+| Événement            | Direction        | Description                              |
+| -------------------- | ---------------- | ---------------------------------------- |
+| `notification`       | Serveur → Client | Nouvelle notification reçue              |
+| `subscribe:camera`   | Client → Serveur | S'abonner aux notifications d'une caméra |
+| `unsubscribe:camera` | Client → Serveur | Se désabonner d'une caméra               |
+
+### S'abonner/Désabonner manuellement
+
+```javascript
+// S'abonner à une caméra spécifique
+socket.emit("subscribe:camera", "cam_esp32_002");
+
+// Se désabonner
+socket.emit("unsubscribe:camera", "cam_esp32_002");
+```
+
+> 📌 À la connexion, l'utilisateur est automatiquement abonné à toutes ses caméras (via la table `user_cameras`).
+
+## �🗄️ Structure de la base de données
 
 ```sql
 -- Table des utilisateurs
@@ -194,7 +255,8 @@ mycam-api/
 ├── src/
 │   ├── index.js              # Point d'entrée
 │   ├── config/
-│   │   └── database.js       # Configuration PostgreSQL
+│   │   ├── database.js       # Configuration PostgreSQL
+│   │   └── socket.js         # Configuration Socket.IO
 │   ├── middleware/
 │   │   └── auth.js           # Middlewares JWT & API Key
 │   ├── routes/

@@ -1,7 +1,7 @@
 import express, { Response } from "express";
 import pool from "../config/database";
 import { emitNotification } from "../config/socket";
-import { authenticateToken, authenticateApiKey } from "../middleware/auth";
+import { authenticateToken, authenticateApiKey, authenticateCameraApiKey } from "../middleware/auth";
 import { AuthenticatedRequest } from "../types";
 
 const router = express.Router();
@@ -94,6 +94,7 @@ router.get(
 // Route pour les notifications (POST)
 router.post(
   "/notification/:cam_key",
+    authenticateCameraApiKey,
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const { cam_key } = req.params;

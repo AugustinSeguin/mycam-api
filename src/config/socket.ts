@@ -20,9 +20,14 @@ interface AuthenticatedSocket extends Socket {
 export const initSocket = (server: http.Server): Server => {
   io = new Server(server, {
     cors: {
-      origin: "*",
+      origin: process.env.CLIENT_URL || "*",
       methods: ["GET", "POST"],
+      credentials: true,
     },
+    allowEIO3: true,
+    transports: ["polling", "websocket"],
+    pingTimeout: 60000,
+    pingInterval: 25000,
   });
 
   // Middleware d'authentification Socket.IO
@@ -31,20 +36,36 @@ export const initSocket = (server: http.Server): Server => {
       const token = socket.handshake.auth.token as string;
 
       if (!token) {
-        return next(new Error("Token manquant"));
+        console.warn("[Socket.IO] Connexion sans token - mode non authentifié");
+        return next(); // Allow connection without auth
       }
 
       // Vérifier le JWT
-      const decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET as string
-      ) as UserPayload;
-      socket.userId = decoded.id;
-      socket.userEmail = decoded.email;
+      try {
+        const decoded = jwt.verify(
+          token,
+          process.env.JWT_SECRET as string
+        ) as UserPayload;
+        socket.userId = decoded.id;
+        socket.userEmail = decoded.email;
+        console.log(`[Socket.IO] Token validé pour: ${socket.userEmail}`);
+      } catch (jwtError) {
+        console.error(
+          "[Socket.IO] Token invalide:",
+          jwtError instanceof Error ? jwtError.message : jwtError,
+          "\nToken reçu (premiers 20 chars):",
+          token?.substring(0, 20)
+        );
+        // Allow connection anyway for debugging
+      }
 
       next();
-    } catch {
-      next(new Error("Token invalide"));
+    } catch (error) {
+      console.error(
+        "[Socket.IO] Erreur inattendue:",
+        error instanceof Error ? error.message : error
+      );
+      next(); // Allow connection anyway
     }
   });
 

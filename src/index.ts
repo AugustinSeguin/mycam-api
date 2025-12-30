@@ -29,6 +29,7 @@ app.use(
       "Authorization",
       "X-API-Key",
       "X-Camera-API-Key",
+      "ngrok-skip-browser-warning", // Pour ngrok
     ],
   })
 );

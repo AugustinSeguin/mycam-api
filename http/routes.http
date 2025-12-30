@@ -1,7 +1,7 @@
 ### Variables
-@baseUrl = http://0.0.0.0:3000
+@baseUrl = https://a0aed7638626.ngrok-free.app
 @apiKey = MyCamAPI_7x9K2mP4nQ8vW5yZ3bC6hJ1lR0tS
-@cameraApiKey = CamRegister_8k2L5pN9qR4wX7zA1bD3eF6gH0iJ
+@cameraApiKey = CamRegister_7f9a2b5e8c1d4a6b93e0f2d1c5b8a472
 @token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhdWd1c3RpbkB0ZXN0LmNvbSIsImlhdCI6MTc2NzA4NzE0NCwiZXhwIjoxNzY3MTczNTQ0fQ.o_gllX5wI3N1BS-yp0782rAZexWZepJLJtJJJjjXaSo
 @camKey = cam_esp32_002
 
@@ -68,10 +68,11 @@ X-API-Key: {{apiKey}}
 POST {{baseUrl}}/cameras/notification/{{camKey}}
 Content-Type: application/json
 X-API-Key: {{apiKey}}
+X-Camera-API-Key: {{cameraApiKey}}
 
 {
   "type": "motion",
-  "message": "Movement detected by ESP32-CAM",
+  "message": "Mouvement détecté par la caméra",
   "timestamp": 1702469789
 }
 
@@ -79,10 +80,11 @@ X-API-Key: {{apiKey}}
 POST {{baseUrl}}/cameras/notification/{{camKey}}
 Content-Type: application/json
 X-API-Key: {{apiKey}}
+X-Camera-API-Key: {{cameraApiKey}}
 
 {
   "type": "motion",
-  "message": "Movement detected - test sans timestamp"
+  "message": "Mouvement détecté par la caméra"
 }
 
 ###############################################

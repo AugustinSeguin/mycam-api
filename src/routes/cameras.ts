@@ -14,15 +14,19 @@ const router = express.Router();
 router.post("/update-ip", authenticateCameraApiKey, async (req, res) => {
   try {
     const { cam_key, local_ip } = req.body;
-    
+
     // 1. Déterminer l'IP à enregistrer
-    let rawIp = local_ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress || "";
-    
+    let rawIp =
+      local_ip ||
+      req.headers["x-forwarded-for"] ||
+      req.socket.remoteAddress ||
+      "";
+
     // 2. Nettoyage robuste
-    let ipToSave = Array.isArray(rawIp) ? rawIp[0] : rawIp.split(',')[0].trim();
-    
-    if (ipToSave.includes('::ffff:')) {
-      ipToSave = ipToSave.replace('::ffff:', '');
+    let ipToSave = Array.isArray(rawIp) ? rawIp[0] : rawIp.split(",")[0].trim();
+
+    if (ipToSave.includes("::ffff:")) {
+      ipToSave = ipToSave.replace("::ffff:", "");
     }
 
     console.log(`[HEARTBEAT] Caméra ${cam_key} -> IP : ${ipToSave}`);
@@ -34,10 +38,13 @@ router.post("/update-ip", authenticateCameraApiKey, async (req, res) => {
     );
 
     if (result.rowCount === 0) {
-      return res.status(404).json({ error: "Caméra non trouvée en base de données." });
+      return res
+        .status(404)
+        .json({ error: "Caméra non trouvée en base de données." });
     }
 
     res.status(200).send("IP mise à jour");
+    return;
   } catch (error) {
     console.error("Erreur serveur Heartbeat:", error);
     res.status(500).json({ error: "Erreur serveur" });

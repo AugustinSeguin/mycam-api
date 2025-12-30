@@ -48,6 +48,7 @@ router.post("/update-ip", authenticateCameraApiKey, async (req, res) => {
   } catch (error) {
     console.error("Erreur serveur Heartbeat:", error);
     res.status(500).json({ error: "Erreur serveur" });
+    return;
   }
 });
 

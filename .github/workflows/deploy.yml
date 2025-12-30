@@ -1,4 +1,4 @@
-name: Build and Deploy
+name: Build and Deploy Node API
 
 on:
   push:
@@ -7,8 +7,9 @@ on:
       - master
 
 jobs:
-  build-and-deploy:
+  deploy-api:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -16,22 +17,36 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22.x
+          node-version: '22'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
-      - name: Build project
-        run: npm run build
+      - name: Build project (si TypeScript)
+        run: npm run build --if-present
 
-      - name: Deploy
-        if: success()
+      - name: Deploy files to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
-          source: "dist/*"
-          target: ${{ secrets.VPS_TARGET_PATH }}
+          source: "dist/*,package.json,package-lock.json"
+          target: ${{ secrets.VPS_TARGET_PATH_API }}
+          strip_components: 0 
 
+      - name: Post-deployment commands via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            cd ${{ secrets.VPS_TARGET_PATH_API }}
+            # Installation des dépendances de production uniquement sur le VPS
+            npm install --production
+            # Redémarrage de l'application avec PM2
+            pm2 restart my-camera-api || pm2 start dist/index.js --name my-camera-api
+            pm2 save

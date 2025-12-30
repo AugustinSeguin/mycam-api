@@ -25,6 +25,7 @@ const initDb = async (): Promise<void> => {
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         cam_key VARCHAR(255) UNIQUE NOT NULL,
+        ip_address VARCHAR(255),
         created_by INTEGER REFERENCES users(id),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );

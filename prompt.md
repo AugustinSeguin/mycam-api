@@ -50,3 +50,7 @@ X-API-Key: {{apiKey}}
 
 je veux que tu envoie en temps reel une notification a l'utilisateur connecté.
 Utilise les packages adaptés.
+
+**flux video**
+
+Côté API Node.js : faire un proxy HTTP qui relaie ce flux MJPEG de l’ESP32 vers le client, en envoyant les bons headers (Content-Type: multipart/x-mixed-replace; boundary=...).

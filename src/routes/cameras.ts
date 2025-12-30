@@ -1,10 +1,48 @@
 import express, { Response } from "express";
 import pool from "../config/database";
 import { emitNotification } from "../config/socket";
-import { authenticateToken, authenticateApiKey, authenticateCameraApiKey } from "../middleware/auth";
+import {
+  authenticateToken,
+  authenticateApiKey,
+  authenticateCameraApiKey,
+} from "../middleware/auth";
 import { AuthenticatedRequest } from "../types";
 
 const router = express.Router();
+
+// Heartbeat dynamique : mise à jour de l'IP publique de la caméra
+router.post("/update-ip", authenticateCameraApiKey, async (req, res) => {
+  try {
+    const { cam_key, local_ip } = req.body;
+    
+    // 1. Déterminer l'IP à enregistrer
+    let rawIp = local_ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress || "";
+    
+    // 2. Nettoyage robuste
+    let ipToSave = Array.isArray(rawIp) ? rawIp[0] : rawIp.split(',')[0].trim();
+    
+    if (ipToSave.includes('::ffff:')) {
+      ipToSave = ipToSave.replace('::ffff:', '');
+    }
+
+    console.log(`[HEARTBEAT] Caméra ${cam_key} -> IP : ${ipToSave}`);
+
+    // 3. Exécution avec vérification
+    const result = await pool.query(
+      "UPDATE cameras SET ip_address = $1 WHERE cam_key = $2",
+      [ipToSave, cam_key]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Caméra non trouvée en base de données." });
+    }
+
+    res.status(200).send("IP mise à jour");
+  } catch (error) {
+    console.error("Erreur serveur Heartbeat:", error);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
 
 // Créer une nouvelle caméra
 router.post(
@@ -58,13 +96,18 @@ router.post(
 );
 
 // Vidéo en temps réel (placeholders pour les flux vidéo réels)
+import http from "node:http";
+import https from "node:https";
+
 router.get(
   "/video/:cam_key",
+  // authenticateToken,
+  // authenticateApiKey,
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const { cam_key } = req.params;
 
-      // Vérifier que la caméra existe
+      // 1. Récupérer les infos de la caméra
       const camera = await pool.query(
         "SELECT * FROM cameras WHERE cam_key = $1",
         [cam_key]
@@ -75,26 +118,93 @@ router.get(
         return;
       }
 
-      // Pour un vrai flux MJPEG, vous devriez se connecter à la caméra ESP32
-      // Ceci est un placeholder simple
-      res.setHeader("Content-Type", "application/json");
-      res.json({
-        message: "Flux vidéo en temps réel",
-        cam_key: cam_key,
-        camera: camera.rows[0],
-        status: "streaming",
+      const cam = camera.rows[0];
+      if (!cam.ip_address) {
+        res.status(400).json({ error: "Adresse IP de la caméra manquante." });
+        return;
+      }
+
+      // 2. Préparation du Proxy vers l'ESP32
+      const espUrl = `http://${cam.ip_address}/stream`;
+      const CAMERA_API_KEY =
+        process.env.CAMERA_API_KEY ||
+        "CamRegister_7f9a2b5e8c1d4a6b93e0f2d1c5b8a472";
+
+      console.log(`[STREAM] Tentative de connexion à: ${espUrl}`);
+
+      const client = espUrl.startsWith("https") ? https : http;
+
+      const proxyReq = client.get(
+        espUrl,
+        {
+          headers: {
+            "X-Camera-API-Key": CAMERA_API_KEY,
+          },
+          timeout: 10000, // Timeout de 10s si l'ESP ne répond pas
+        },
+        (proxyRes) => {
+          // Si l'ESP32 répond une erreur (ex: 401 ou 404)
+          if (proxyRes.statusCode !== 200) {
+            console.error(
+              `[STREAM] L'ESP32 a renvoyé un code ${proxyRes.statusCode}`
+            );
+            res
+              .status(proxyRes.statusCode || 502)
+              .json({ error: "La caméra a refusé la connexion." });
+            return;
+          }
+
+          // 3. Configuration des Headers de Streaming
+          // On force le content-type MJPEG avec le boundary standard
+          res.setHeader(
+            "Content-Type",
+            "multipart/x-mixed-replace; boundary=123456789000000000000987654321"
+          );
+
+          // Désactivation totale du cache pour éviter les lags
+          res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+          res.setHeader("Pragma", "no-cache");
+          res.setHeader("Expires", "0");
+
+          // Important pour ngrok et les proxys (évite le buffering)
+          res.setHeader("X-Accel-Buffering", "no");
+          res.setHeader("Connection", "keep-alive");
+
+          console.log(`[STREAM] Flux démarré pour ${cam_key}`);
+
+          // 4. Pipe direct : On transmet les octets tels quels
+          proxyRes.pipe(res);
+
+          // Nettoyage si le client ferme la page
+          req.on("close", () => {
+            console.log(`[STREAM] Connexion fermée par l'utilisateur.`);
+            proxyRes.destroy();
+          });
+        }
+      );
+
+      proxyReq.on("error", (err) => {
+        console.error("[STREAM] Erreur Proxy:", err.message);
+        if (!res.headersSent) {
+          res
+            .status(502)
+            .json({ error: "Caméra injoignable (Vérifiez l'IP ou le VPN)" });
+        }
       });
     } catch (error) {
-      console.error("Erreur lors de l'accès au flux vidéo:", error);
-      res.status(500).json({ error: "Erreur serveur" });
+      console.error("[STREAM] Erreur Serveur:", error);
+      if (!res.headersSent) {
+        res
+          .status(500)
+          .json({ error: "Erreur interne du serveur de streaming" });
+      }
     }
   }
 );
-
 // Route pour les notifications (POST)
 router.post(
   "/notification/:cam_key",
-    authenticateCameraApiKey,
+  authenticateCameraApiKey,
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const { cam_key } = req.params;

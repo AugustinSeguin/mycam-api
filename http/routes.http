@@ -1,5 +1,5 @@
 ### Variables
-@baseUrl = https://a0aed7638626.ngrok-free.app
+@baseUrl = https://8437b7a01aff.ngrok-free.app
 @apiKey = MyCamAPI_7x9K2mP4nQ8vW5yZ3bC6hJ1lR0tS
 @cameraApiKey = CamRegister_7f9a2b5e8c1d4a6b93e0f2d1c5b8a472
 @token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhdWd1c3RpbkB0ZXN0LmNvbSIsImlhdCI6MTc2NzA4NzE0NCwiZXhwIjoxNzY3MTczNTQ0fQ.o_gllX5wI3N1BS-yp0782rAZexWZepJLJtJJJjjXaSo
@@ -62,6 +62,7 @@ X-API-Key: {{apiKey}}
 
 ### Flux vidéo en temps réel (nécessite API Key)
 GET {{baseUrl}}/cameras/video/{{camKey}}
+Authorization: Bearer {{token}}
 X-API-Key: {{apiKey}}
 
 ### Envoyer une notification (nécessite API Key) - Simule l'ESP32

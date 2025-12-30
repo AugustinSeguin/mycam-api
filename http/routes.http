@@ -1,7 +1,7 @@
 ### Variables
-@baseUrl = http://10.254.176.58:3000
+@baseUrl = http://0.0.0.0:3000
 @apiKey = MyCamAPI_7x9K2mP4nQ8vW5yZ3bC6hJ1lR0tS
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhdWd1c3RpbkB0ZXN0LmNvbSIsImlhdCI6MTc2NTYyNDI1NCwiZXhwIjoxNzY1NzEwNjU0fQ.QCBAJ47cPqo94pqtqzppGq57wghsYa4_1oo_ZbnXsJI
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJhdWd1c3RpbkB0ZXN0LmNvbSIsImlhdCI6MTc2NzA4NzE0NCwiZXhwIjoxNzY3MTczNTQ0fQ.o_gllX5wI3N1BS-yp0782rAZexWZepJLJtJJJjjXaSo
 @camKey = cam_esp32_001
 
 ### Health Check

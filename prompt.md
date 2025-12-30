@@ -28,5 +28,23 @@ Une camera : id, nom, cam_key
 
 **Feature secu**
 
-utiliser une API key & une cam key (dela table camera)
+utiliser une API key & une cam key (de la table camera)
 
+**Feature notif**
+
+Lorsque cette route la est appelée :
+
+```json
+POST {{baseUrl}}/cameras/notification/{{camKey}}
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "type": "motion",
+  "message": "Movement detected by ESP32-CAM",
+  "timestamp": 1702469789
+}
+```
+
+je veux que tu envoie en temps reel une notification a  l'utilisateur connecté. 
+Utilise les packages adaptés.
